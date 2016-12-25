@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace ECS
 {
    
-public sealed partial class Context
+public sealed class Context
 {
     private HashSet<int> entities = new HashSet<int>();
     private HashSet<System> systems = new HashSet<System>();
