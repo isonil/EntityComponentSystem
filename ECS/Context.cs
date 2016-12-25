@@ -38,50 +38,8 @@ public sealed class Context
 
     public void Update()
     {
-        if( systems_fastIt_dirty )
-        {
-            systems_fastIt.Clear();
-            systems_fastIt.AddRange(systems);
-            systems_fastIt_dirty = false;
-        }
-
-        if( cachedComponentsOfType_fastIt_dirty )
-        {
-            // clear cached lists
-            foreach( var kvp in cachedComponentsOfType_fastIt )
-            {
-                kvp.Value.Clear();
-            }
-
-            // fill cached lists
-            foreach( var kvp in cachedComponentsOfType )
-            {
-                List<Component> cachedComponents;
-
-                if( !cachedComponentsOfType_fastIt.TryGetValue(kvp.Key, out cachedComponents) )
-                {
-                    cachedComponents = new List<Component>();
-                    cachedComponentsOfType_fastIt.Add(kvp.Key, cachedComponents);
-                }
-
-                cachedComponents.AddRange(kvp.Value);
-            }
-
-            // assign cached lists
-            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
-            {
-                var system = systems_fastIt[i];
-
-                List<Component> cachedComponents;
-
-                if( !cachedComponentsOfType_fastIt.TryGetValue(system.ComponentType, out cachedComponents) )
-                    cachedComponents = null;
-
-                system.SetCachedComponents(cachedComponents);
-            }
-
-            cachedComponentsOfType_fastIt_dirty = false;
-        }
+        EnsureSystemsFastItNotDirty();
+        EnsureCachedComponentsOfTypeFastItNotDirty();
 
         for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
         {
@@ -639,9 +597,74 @@ public sealed class Context
         return 0;
     }
 
+    //////////////
+    /// Events ///
+    //////////////
+
+    public void SendEvent(Event ev)
+    {
+        EnsureSystemsFastItNotDirty();
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+        {
+            systems_fastIt[i].ReceiveEvent(ev);
+        }
+    }
+
     ///////////////
     /// Private ///
     ///////////////
+
+    private void EnsureSystemsFastItNotDirty()
+    {
+        if( systems_fastIt_dirty )
+        {
+            systems_fastIt.Clear();
+            systems_fastIt.AddRange(systems);
+            systems_fastIt_dirty = false;
+        }
+    }
+
+    private void EnsureCachedComponentsOfTypeFastItNotDirty()
+    {
+        if( cachedComponentsOfType_fastIt_dirty )
+        {
+            // clear cached lists
+            foreach( var kvp in cachedComponentsOfType_fastIt )
+            {
+                kvp.Value.Clear();
+            }
+
+            // fill cached lists
+            foreach( var kvp in cachedComponentsOfType )
+            {
+                List<Component> cachedComponents;
+
+                if( !cachedComponentsOfType_fastIt.TryGetValue(kvp.Key, out cachedComponents) )
+                {
+                    cachedComponents = new List<Component>();
+                    cachedComponentsOfType_fastIt.Add(kvp.Key, cachedComponents);
+                }
+
+                cachedComponents.AddRange(kvp.Value);
+            }
+
+            // assign cached lists
+            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+            {
+                var system = systems_fastIt[i];
+
+                List<Component> cachedComponents;
+
+                if( !cachedComponentsOfType_fastIt.TryGetValue(system.ComponentType, out cachedComponents) )
+                    cachedComponents = null;
+
+                system.SetCachedComponents(cachedComponents);
+            }
+
+            cachedComponentsOfType_fastIt_dirty = false;
+        }
+    }
 
     private void AddSystem(System newSystem)
     {

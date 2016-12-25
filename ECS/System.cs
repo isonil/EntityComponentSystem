@@ -29,6 +29,38 @@ public abstract class System
         this.cachedComponents = cachedComponents;
     }
 
+    protected Component GetComponentOfEntity(int entityID)
+    {
+        var components = context.GetComponentsOfEntity(entityID);
+
+        if( components == null )
+            return null;
+
+        var componentType = ComponentType;
+
+        foreach( var c in components )
+        {
+            if( componentType == c.GetType() )
+                return c;
+        }
+
+        return null;
+    }
+
+    protected void SendEvent(Event ev)
+    {
+        context.SendEvent(ev);
+    }
+
+    protected void SendEvent(int kind, int entityID, object data)
+    {
+        context.SendEvent(new Event(kind, this, entityID, data));
+    }
+
+    public virtual void ReceiveEvent(Event ev)
+    {
+    }
+
     public abstract void Update();
 }
     
@@ -36,6 +68,24 @@ public abstract class System<T> : System
     where T : Component
 {
     public override Type ComponentType { get { return TypesCache<T>.Type; } }
+
+    protected new T GetComponentOfEntity(int entityID)
+    {
+        var components = Context.GetComponentsOfEntity(entityID);
+
+        if( components == null )
+            return null;
+
+        foreach( var c in components )
+        {
+            var cAsT = c as T;
+
+            if( cAsT != null )
+                return cAsT;
+        }
+
+        return null;
+    }
 
     public override void Update()
     {

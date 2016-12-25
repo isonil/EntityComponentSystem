@@ -14,6 +14,13 @@ public class System2 : System<Comp2>
     {
         Console.WriteLine("Updating Comp2 of " + component.EntityID);
     }
+
+    public override void ReceiveEvent(Event ev)
+    {
+        base.ReceiveEvent(ev);
+
+        Console.WriteLine("System2 received event. Kind = " + ev.Kind + ", EntityID = " + ev.EntityID);
+    }
 }
 
 }
