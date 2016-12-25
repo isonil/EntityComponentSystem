@@ -1,5 +1,3 @@
-# EntityComponentSystem
-
 # About
 
 Simple and fast Entity-Component-System for C#.
