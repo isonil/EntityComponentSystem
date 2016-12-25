@@ -9,21 +9,27 @@ namespace ECS
    
 public sealed class Context
 {
+    // main
     private HashSet<int> entities = new HashSet<int>();
     private HashSet<System> systems = new HashSet<System>();
     private HashSet<Component> components = new HashSet<Component>();
 
+    // cached components
     private Dictionary<int, HashSet<Component>> cachedComponentsByEntity = new Dictionary<int, HashSet<Component>>();
     private Dictionary<Type, HashSet<Component>> cachedComponentsOfType = new Dictionary<Type, HashSet<Component>>();
 
+    // systems - cached for fast iteration
     private List<System> systems_fastIt = new List<System>();
     private bool systems_fastIt_dirty;
 
+    // components - cached for fast iteration
     private Dictionary<Type, List<Component>> cachedComponentsOfType_fastIt = new Dictionary<Type, List<Component>>();
     private bool cachedComponentsOfType_fastIt_dirty;
 
+    // working lists
     private HashSet<System> justRemoved = new HashSet<System>();
-
+    
+    // misc
     private int nextEntityID;
 
     public IEnumerable<int> Entities { get { return entities; } }
@@ -83,6 +89,10 @@ public sealed class Context
         }
     }
 
+    //////////////////
+    /// Add system ///
+    //////////////////
+
     public T AddSystem<T>()
         where T : System, new()
     {
@@ -98,10 +108,84 @@ public sealed class Context
         return newSystem;
     }
 
+    /////////////////////
+    /// Query systems ///
+    /////////////////////
+
     public bool ContainsSystem(System system)
     {
         return systems.Contains(system);
     }
+
+    public T GetFirstSystemOfType<T>()
+        where T : System
+    {
+        foreach( var s in systems )
+        {
+            var sAsT = s as T;
+
+            if( sAsT != null )
+                return sAsT;
+        }
+
+        return null;
+    }
+
+    public System GetFirstSystemOfType(Type type)
+    {
+        Type prevType = null;
+
+        foreach( var s in systems )
+        {
+            var systemType = s.GetType();
+
+            if( systemType == prevType )
+                continue;
+
+            if( type.IsAssignableFrom(systemType) )
+                return s;
+
+            prevType = systemType;
+        }
+
+        return null;
+    }
+
+    public System GetFirstSystemWithComponentType<T>()
+        where T : Component
+    {
+        foreach( var s in systems )
+        {
+            if( s.ComponentType is T )
+                return s;
+        }
+
+        return null;
+    }
+
+    public System GetFirstSystemWithComponentType(Type type)
+    {
+        Type prevComponentType = null;
+
+        foreach( var s in systems )
+        {
+            var componentType = s.ComponentType;
+
+            if( componentType == prevComponentType )
+                continue;
+
+            if( type.IsAssignableFrom(componentType) )
+                return s;
+
+            prevComponentType = componentType;
+        }
+
+        return null;
+    }
+
+    /////////////////////
+    /// Remove system ///
+    /////////////////////
 
     public bool RemoveSystem(System system)
     {
@@ -273,71 +357,9 @@ public sealed class Context
         }
     }
 
-    public T GetFirstSystemOfType<T>()
-        where T : System
-    {
-        foreach( var s in systems )
-        {
-            var sAsT = s as T;
-
-            if( sAsT != null )
-                return sAsT;
-        }
-
-        return null;
-    }
-
-    public System GetFirstSystemOfType(Type type)
-    {
-        Type prevType = null;
-
-        foreach( var s in systems )
-        {
-            var systemType = s.GetType();
-
-            if( systemType == prevType )
-                continue;
-
-            if( type.IsAssignableFrom(systemType) )
-                return s;
-
-            prevType = systemType;
-        }
-
-        return null;
-    }
-
-    public System GetFirstSystemWithComponentType<T>()
-        where T : Component
-    {
-        foreach( var s in systems )
-        {
-            if( s.ComponentType is T )
-                return s;
-        }
-
-        return null;
-    }
-
-    public System GetFirstSystemWithComponentType(Type type)
-    {
-        Type prevComponentType = null;
-
-        foreach( var s in systems )
-        {
-            var componentType = s.ComponentType;
-
-            if( componentType == prevComponentType )
-                continue;
-
-            if( type.IsAssignableFrom(componentType) )
-                return s;
-
-            prevComponentType = componentType;
-        }
-
-        return null;
-    }
+    //////////////////
+    /// Add entity ///
+    //////////////////
 
     public int AddEntity()
     {
@@ -346,10 +368,18 @@ public sealed class Context
         return entityID;
     }
 
+    //////////////////////
+    /// Query entities ///
+    //////////////////////
+
     public bool ContainsEntity(int entityID)
     {
         return entities.Contains(entityID);
     }
+
+    /////////////////////
+    /// Remove entity ///
+    /////////////////////
 
     public bool RemoveEntity(int entityID)
     {
@@ -362,6 +392,34 @@ public sealed class Context
         }
 
         return false;
+    }
+
+    /////////////////////
+    /// Add component ///
+    /////////////////////
+
+    public T AddComponent<T>(int entityID)
+        where T : Component, new()
+    {
+        var newComponent = new T();
+        AddComponent(newComponent, entityID);
+        return newComponent;
+    }
+
+    public Component AddComponent(int entityID, Type type)
+    {
+        var newComponent = (Component)Activator.CreateInstance(type);
+        AddComponent(newComponent, entityID);
+        return newComponent;
+    }
+
+    ////////////////////////
+    /// Query components ///
+    ////////////////////////
+
+    public bool ContainsComponent(Component component)
+    {
+        return components.Contains(component);
     }
 
     public IEnumerable<Component> GetComponentsOfType<T>()
@@ -439,25 +497,9 @@ public sealed class Context
         return null;
     }
 
-    public T AddComponent<T>(int entityID)
-        where T : Component, new()
-    {
-        var newComponent = new T();
-        AddComponent(newComponent, entityID);
-        return newComponent;
-    }
-
-    public Component AddComponent(int entityID, Type type)
-    {
-        var newComponent = (Component)Activator.CreateInstance(type);
-        AddComponent(newComponent, entityID);
-        return newComponent;
-    }
-
-    public bool ContainsComponent(Component component)
-    {
-        return components.Contains(component);
-    }
+    ////////////////////////
+    /// Remove component ///
+    ////////////////////////
 
     public bool RemoveComponent(Component component)
     {
@@ -596,6 +638,10 @@ public sealed class Context
 
         return 0;
     }
+
+    ///////////////
+    /// Private ///
+    ///////////////
 
     private void AddSystem(System newSystem)
     {
