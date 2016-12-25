@@ -4,9 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-/* todo: reset Context and other fields when removing component or system
- */
-
 namespace ECS
 {
    
@@ -25,6 +22,8 @@ public sealed partial class Context
     private Dictionary<Type, List<Component>> cachedComponentsOfType_fastIt = new Dictionary<Type, List<Component>>();
     private bool cachedComponentsOfType_fastIt_dirty;
 
+    private HashSet<System> justRemoved = new HashSet<System>();
+
     private int nextEntityID;
 
     public IEnumerable<int> Entities { get { return entities; } }
@@ -35,20 +34,20 @@ public sealed partial class Context
     {
         if( systems_fastIt_dirty )
         {
-            systems_fastIt_dirty = false;
             systems_fastIt.Clear();
             systems_fastIt.AddRange(systems);
+            systems_fastIt_dirty = false;
         }
 
         if( cachedComponentsOfType_fastIt_dirty )
         {
-            cachedComponentsOfType_fastIt_dirty = false;
-
+            // clear cached lists
             foreach( var kvp in cachedComponentsOfType_fastIt )
             {
                 kvp.Value.Clear();
             }
 
+            // fill cached lists
             foreach( var kvp in cachedComponentsOfType )
             {
                 List<Component> cachedComponents;
@@ -62,6 +61,7 @@ public sealed partial class Context
                 cachedComponents.AddRange(kvp.Value);
             }
 
+            // assign cached lists
             for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
             {
                 var system = systems_fastIt[i];
@@ -73,6 +73,8 @@ public sealed partial class Context
 
                 system.SetCachedComponents(cachedComponents);
             }
+
+            cachedComponentsOfType_fastIt_dirty = false;
         }
 
         for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
@@ -105,6 +107,9 @@ public sealed partial class Context
     {
         if( systems.Remove(system) )
         {
+            system.Context = null;
+            system.SetCachedComponents(null);
+
             systems_fastIt_dirty = true;
             return true;
         }
@@ -115,22 +120,157 @@ public sealed partial class Context
     public int RemoveSystemsOfType<T>()
         where T : System
     {
-        int removed = systems.RemoveWhere(SystemTypesCache<T>.IsT);
+        try
+        {
+            justRemoved.Clear();
 
-        if( removed != 0 )
+            foreach( var s in systems )
+            {
+                if( s is T )
+                {
+                    s.Context = null;
+                    s.SetCachedComponents(null);
+
+                    justRemoved.Add(s);
+                }
+            }
+
+            int removed = systems.RemoveWhere(x => justRemoved.Contains(x));
+
+            if( removed != 0 )
+                systems_fastIt_dirty = true;
+
+            justRemoved.Clear();
+
+            return removed;
+        }
+        catch
+        {
             systems_fastIt_dirty = true;
+            throw;
+        }
+    }
 
-        return removed;
+    public int RemoveSystemsWithComponentType<T>()
+        where T : Component
+    {
+        try
+        {
+            justRemoved.Clear();
+
+            foreach( var s in systems )
+            {
+                if( s.ComponentType is T )
+                {
+                    s.Context = null;
+                    s.SetCachedComponents(null);
+
+                    justRemoved.Add(s);
+                }
+            }
+
+            int removed = systems.RemoveWhere(x => justRemoved.Contains(x));
+
+            if( removed != 0 )
+                systems_fastIt_dirty = true;
+
+            justRemoved.Clear();
+
+            return removed;
+        }
+        catch
+        {
+            systems_fastIt_dirty = true;
+            throw;
+        }
     }
 
     public int RemoveSystemsOfType(Type type)
     {
-        int removed = systems.RemoveWhere(x => x.GetType() == type);
+        try
+        {
+            justRemoved.Clear();
 
-        if( removed != 0 )
+            Type prevSystemType = null;
+            bool prevSystemTypeResult = false;
+
+            foreach( var s in systems )
+            {
+                var systemType = s.GetType();
+
+                if( systemType != prevSystemType )
+                {
+                    prevSystemType = systemType;
+                    prevSystemTypeResult = type.IsAssignableFrom(systemType);
+                }
+
+                if( !prevSystemTypeResult )
+                    continue;
+
+                s.Context = null;
+                s.SetCachedComponents(null);
+
+                justRemoved.Add(s);
+            }
+
+            int removed = systems.RemoveWhere(x => justRemoved.Contains(x));
+
+            if( removed != 0 )
+                systems_fastIt_dirty = true;
+
+            justRemoved.Clear();
+
+            return removed;
+        }
+        catch
+        {
             systems_fastIt_dirty = true;
+            throw;
+        }
+    }
 
-        return removed;
+    public int RemoveSystemsWithComponentType(Type type)
+    {
+        try
+        {
+            justRemoved.Clear();
+
+            Type prevComponentType = null;
+            bool prevComponentTypeResult = false;
+
+            foreach( var s in systems )
+            {
+                var componentType = s.ComponentType;
+
+                if( componentType != prevComponentType )
+                {
+                    prevComponentType = componentType;
+                    prevComponentTypeResult = type.IsAssignableFrom(componentType);
+                }
+
+                if( !prevComponentTypeResult )
+                    continue;
+
+                s.Context = null;
+                s.SetCachedComponents(null);
+
+                justRemoved.Add(s);
+            }
+
+            int removed = systems.RemoveWhere(x => justRemoved.Contains(x));
+
+            if( removed != 0 )
+                systems_fastIt_dirty = true;
+
+            justRemoved.Clear();
+
+            return removed;
+        }
+        catch
+        {
+            systems_fastIt_dirty = true;
+            throw;
+        }
     }
 
     public T GetFirstSystemOfType<T>()
@@ -167,15 +307,13 @@ public sealed partial class Context
         return null;
     }
 
-    public System<T> GetFirstSystemWithComponentType<T>()
+    public System GetFirstSystemWithComponentType<T>()
         where T : Component
     {
         foreach( var s in systems )
         {
-            var sAsT = s as System<T>;
-
-            if( sAsT != null )
-                return sAsT;
+            if( s.ComponentType is T )
+                return s;
         }
 
         return null;
@@ -183,20 +321,19 @@ public sealed partial class Context
 
     public System GetFirstSystemWithComponentType(Type type)
     {
-        var genericType = typeof(System<>).MakeGenericType(type);
-        Type prevType = null;
+        Type prevComponentType = null;
 
         foreach( var s in systems )
         {
-            var systemType = s.GetType();
+            var componentType = s.ComponentType;
 
-            if( systemType == prevType )
+            if( componentType == prevComponentType )
                 continue;
 
-            if( genericType.IsAssignableFrom(systemType) )
+            if( type.IsAssignableFrom(componentType) )
                 return s;
 
-            prevType = systemType;
+            prevComponentType = componentType;
         }
 
         return null;
@@ -283,10 +420,19 @@ public sealed partial class Context
 
         if( cachedComponentsByEntity.TryGetValue(entityID, out components) )
         {
+            Type prevComponentType = null;
+
             foreach( var c in components )
             {
-                if( type.IsAssignableFrom(c.GetType()) )
+                var componentType = c.GetType();
+
+                if( componentType == prevComponentType )
+                    continue;
+
+                if( type.IsAssignableFrom(componentType) )
                     return c;
+
+                prevComponentType = componentType;
             }
         }
 
@@ -317,6 +463,9 @@ public sealed partial class Context
     {
         if( components.Remove(component) )
         {
+            component.Context = null;
+            component.EntityID = -1;
+
             cachedComponentsOfType[component.GetType()].Remove(component);
             cachedComponentsByEntity[component.EntityID].Remove(component);
 
@@ -355,6 +504,9 @@ public sealed partial class Context
                     byEntityForEntityID = entityID;
                 }
 
+                c.Context = null;
+                c.EntityID = -1;
+
                 byEntity.Remove(c);
                 components.Remove(c);
             }
@@ -388,6 +540,9 @@ public sealed partial class Context
                     byType = cachedComponentsOfType[type];
                     byTypeForType = type;
                 }
+
+                c.Context = null;
+                c.EntityID = -1;
 
                 byType.Remove(c);
                 components.Remove(c);
@@ -426,6 +581,9 @@ public sealed partial class Context
                 if( byType == null )
                     byType = cachedComponentsOfType[type];
 
+                c.Context = null;
+                c.EntityID = -1;
+
                 byType.Remove(c);
                 components.Remove(c);
                 cachedComponentsOfType_fastIt_dirty = true;
@@ -441,39 +599,69 @@ public sealed partial class Context
 
     private void AddSystem(System newSystem)
     {
-        newSystem.Context = this;
-        systems.Add(newSystem);
-        systems_fastIt_dirty = true;
+        try
+        {
+            newSystem.Context = this;
+            systems.Add(newSystem);
+            systems_fastIt_dirty = true;
+        }
+        catch
+        {
+            newSystem.Context = null;
+            throw;
+        }
     }
 
     private void AddComponent(Component newComponent, int entityID)
     {
-        newComponent.Context = this;
-        newComponent.EntityID = entityID;
-        components.Add(newComponent);
-
-        HashSet<Component> entityComponents;
-
-        if( !cachedComponentsByEntity.TryGetValue(entityID, out entityComponents) )
+        try
         {
-            entityComponents = new HashSet<Component>();
-            cachedComponentsByEntity.Add(entityID, entityComponents);
+            newComponent.Context = this;
+            newComponent.EntityID = entityID;
+            components.Add(newComponent);
+
+            HashSet<Component> entityComponents;
+
+            if( !cachedComponentsByEntity.TryGetValue(entityID, out entityComponents) )
+            {
+                entityComponents = new HashSet<Component>();
+                cachedComponentsByEntity.Add(entityID, entityComponents);
+            }
+
+            entityComponents.Add(newComponent);
+
+            HashSet<Component> typeComponents;
+            var componentType = newComponent.GetType();
+
+            if( !cachedComponentsOfType.TryGetValue(componentType, out typeComponents) )
+            {
+                typeComponents = new HashSet<Component>();
+                cachedComponentsOfType.Add(componentType, typeComponents);
+            }
+
+            typeComponents.Add(newComponent);
+
+            cachedComponentsOfType_fastIt_dirty = true;
         }
-
-        entityComponents.Add(newComponent);
-
-        HashSet<Component> typeComponents;
-        var componentType = newComponent.GetType();
-
-        if( !cachedComponentsOfType.TryGetValue(componentType, out typeComponents) )
+        catch
         {
-            typeComponents = new HashSet<Component>();
-            cachedComponentsOfType.Add(componentType, typeComponents);
+            newComponent.Context = null;
+            newComponent.EntityID = -1;
+
+            components.Remove(newComponent);
+            
+            HashSet<Component> entityComponents;
+
+            if( cachedComponentsByEntity.TryGetValue(entityID, out entityComponents) )
+                entityComponents.Remove(newComponent);
+
+            HashSet<Component> typeComponents;
+
+            if( cachedComponentsOfType.TryGetValue(newComponent.GetType(), out typeComponents) )
+                typeComponents.Remove(newComponent);
+
+            throw;
         }
-
-        typeComponents.Add(newComponent);
-
-        cachedComponentsOfType_fastIt_dirty = true;
     }
 }
 

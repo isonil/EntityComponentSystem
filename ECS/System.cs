@@ -30,6 +30,10 @@ public abstract class System
     }
 
     public abstract void Update();
+
+    public virtual void Init()
+    {
+    }
 }
     
 public abstract class System<T> : System
