@@ -46,7 +46,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ECS\System.cs" />
-    <Compile Include="ECS\SystemTypesCache.cs" />
     <Compile Include="Test\Comp1.cs" />
     <Compile Include="Test\Comp2.cs" />
     <Compile Include="Test\System1.cs" />
