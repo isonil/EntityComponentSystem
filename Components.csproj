@@ -41,18 +41,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Component.cs" />
-    <Compile Include="Context.cs" />
+    <Compile Include="ECS\Component.cs" />
+    <Compile Include="ECS\Context.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="System.cs" />
-    <Compile Include="SystemTypesCache.cs" />
+    <Compile Include="ECS\System.cs" />
+    <Compile Include="ECS\SystemTypesCache.cs" />
     <Compile Include="Test\Comp1.cs" />
     <Compile Include="Test\Comp2.cs" />
     <Compile Include="Test\System1.cs" />
     <Compile Include="Test\System2.cs" />
     <Compile Include="Test\Test.cs" />
-    <Compile Include="TypesCache.cs" />
+    <Compile Include="ECS\TypesCache.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -96,6 +96,11 @@ public sealed partial class Context
         return newSystem;
     }
 
+    public bool ContainsSystem(System system)
+    {
+        return systems.Contains(system);
+    }
+
     public bool RemoveSystem(System system)
     {
         if( systems.Remove(system) )
@@ -204,6 +209,11 @@ public sealed partial class Context
         return entityID;
     }
 
+    public bool ContainsEntity(int entityID)
+    {
+        return entities.Contains(entityID);
+    }
+
     public bool RemoveEntity(int entityID)
     {
         if( entities.Remove(entityID) )
@@ -296,6 +306,26 @@ public sealed partial class Context
         var newComponent = (Component)Activator.CreateInstance(type);
         AddComponent(newComponent, entityID);
         return newComponent;
+    }
+
+    public bool ContainsComponent(Component component)
+    {
+        return components.Contains(component);
+    }
+
+    public bool RemoveComponent(Component component)
+    {
+        if( components.Remove(component) )
+        {
+            cachedComponentsOfType[component.GetType()].Remove(component);
+            cachedComponentsByEntity[component.EntityID].Remove(component);
+
+            cachedComponentsOfType_fastIt_dirty = true;
+
+            return true;
+        }
+
+        return false;
     }
 
     public int RemoveComponentsOfType<T>()

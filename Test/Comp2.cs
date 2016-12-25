@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ECS;
 
-namespace ECS.Test
+namespace Test
 {
 
 public class Comp2 : Component
