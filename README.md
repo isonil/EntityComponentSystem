@@ -6,6 +6,8 @@ All operations: adding, removing, querying, and iterating have reasonable time c
 
 Every entity is represented as an int.
 
+The code is self-documenting. Start with creating an instance of Context.
+
 # Usage
 
 1. Create an instance of Context.
