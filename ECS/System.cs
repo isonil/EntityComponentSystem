@@ -31,20 +31,7 @@ public abstract class System
 
     protected Component GetComponentOfEntity(int entityID)
     {
-        var components = context.GetComponentsOfEntity(entityID);
-
-        if( components == null )
-            return null;
-
-        var componentType = ComponentType;
-
-        foreach( var c in components )
-        {
-            if( componentType == c.GetType() )
-                return c;
-        }
-
-        return null;
+        return context.GetFirstComponentOfTypeOfEntity(ComponentType, entityID);
     }
 
     protected void SendEvent(Event ev)
@@ -71,20 +58,7 @@ public abstract class System<T> : System
 
     protected new T GetComponentOfEntity(int entityID)
     {
-        var components = Context.GetComponentsOfEntity(entityID);
-
-        if( components == null )
-            return null;
-
-        foreach( var c in components )
-        {
-            var cAsT = c as T;
-
-            if( cAsT != null )
-                return cAsT;
-        }
-
-        return null;
+        return Context.GetFirstComponentOfTypeOfEntity<T>(entityID);
     }
 
     public override void Update()
