@@ -18,7 +18,15 @@ public abstract class System
         internal set { context = value; }
     }
 
-    protected List<Component> CachedComponents { get { return cachedComponents; } }
+    protected List<Component> CachedComponents
+    {
+        get
+        {
+            context.RecacheCachedComponentsForSystemsIfNeeded();
+
+            return cachedComponents;
+        }
+    }
 
     public abstract Type ComponentType { get; }
 
@@ -48,7 +56,7 @@ public abstract class System
     {
     }
 
-    public abstract void Update();
+    public abstract void Update(int updateType);
 }
     
 public abstract class System<T> : System
@@ -61,7 +69,7 @@ public abstract class System<T> : System
         return Context.GetFirstComponentOfTypeOfEntity<T>(entityID);
     }
 
-    public override void Update()
+    public override void Update(int updateType)
     {
         var cachedComponents = CachedComponents;
 
@@ -69,12 +77,12 @@ public abstract class System<T> : System
         {
             for( int i = 0, count = cachedComponents.Count; i < count; ++i )
             {
-                Update((T)cachedComponents[i]);
+                Update((T)cachedComponents[i], updateType);
             }
         }
     }
 
-    protected virtual void Update(T component)
+    protected virtual void Update(T component, int updateType)
     {
     }
 }

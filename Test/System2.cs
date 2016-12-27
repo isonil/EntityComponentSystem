@@ -10,7 +10,7 @@ namespace Test
 
 public class System2 : System<Comp2>
 {
-    protected override void Update(Comp2 component)
+    protected override void Update(Comp2 component, int updateType)
     {
         Console.WriteLine("Updating Comp2 of " + component.EntityID);
     }

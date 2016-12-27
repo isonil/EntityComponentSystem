@@ -10,24 +10,24 @@ namespace ECS
 public sealed class Context
 {
     // main
-    private HashSet<int> entities = new HashSet<int>();
-    private HashSet<System> systems = new HashSet<System>();
-    private HashSet<Component> components = new HashSet<Component>();
+    private readonly HashSet<int> entities = new HashSet<int>();
+    private readonly HashSet<System> systems = new HashSet<System>();
+    private readonly HashSet<Component> components = new HashSet<Component>();
 
     // cached components
-    private Dictionary<int, HashSet<Component>> cachedComponentsByEntity = new Dictionary<int, HashSet<Component>>();
-    private Dictionary<Type, HashSet<Component>> cachedComponentsOfType = new Dictionary<Type, HashSet<Component>>();
+    private readonly Dictionary<int, HashSet<Component>> cachedComponentsByEntity = new Dictionary<int, HashSet<Component>>();
+    private readonly Dictionary<Type, HashSet<Component>> cachedComponentsOfType = new Dictionary<Type, HashSet<Component>>();
 
     // systems - cached for fast iteration
-    private List<System> systems_fastIt = new List<System>();
+    private readonly List<System> systems_fastIt = new List<System>();
     private bool systems_fastIt_dirty;
 
     // components - cached for fast iteration
-    private Dictionary<Type, List<Component>> cachedComponentsOfType_fastIt = new Dictionary<Type, List<Component>>();
+    private readonly Dictionary<Type, List<Component>> cachedComponentsOfType_fastIt = new Dictionary<Type, List<Component>>();
     private bool cachedComponentsOfType_fastIt_dirty;
 
     // working lists
-    private HashSet<System> justRemoved = new HashSet<System>();
+    private readonly HashSet<System> justRemoved = new HashSet<System>();
     
     // misc
     private int nextEntityID;
@@ -38,13 +38,22 @@ public sealed class Context
 
     public void Update()
     {
+        Update(0);
+    }
+
+    public void Update(int updateType)
+    {
         EnsureSystemsFastItNotDirty();
-        EnsureCachedComponentsOfTypeFastItNotDirty();
 
         for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
         {
-            systems_fastIt[i].Update();
+            systems_fastIt[i].Update(updateType);
         }
+    }
+
+    public void RecacheCachedComponentsForSystemsIfNeeded()
+    {
+        EnsureCachedComponentsOfTypeFastItNotDirty();
     }
 
     //////////////////
@@ -61,6 +70,9 @@ public sealed class Context
 
     public System AddSystem(Type type)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         var newSystem = (System)Activator.CreateInstance(type);
         AddSystem(newSystem);
         return newSystem;
@@ -72,15 +84,20 @@ public sealed class Context
 
     public bool ContainsSystem(System system)
     {
+        if( system == null )
+            return false;
+
         return systems.Contains(system);
     }
 
     public T GetFirstSystemOfType<T>()
         where T : System
     {
-        foreach( var s in systems )
+        EnsureSystemsFastItNotDirty();
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
         {
-            var sAsT = s as T;
+            var sAsT = systems_fastIt[i] as T;
 
             if( sAsT != null )
                 return sAsT;
@@ -91,10 +108,17 @@ public sealed class Context
 
     public System GetFirstSystemOfType(Type type)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         Type prevType = null;
 
-        foreach( var s in systems )
+        EnsureSystemsFastItNotDirty();
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
         {
+            var s = systems_fastIt[i];
+
             var systemType = s.GetType();
 
             if( systemType == prevType )
@@ -112,8 +136,12 @@ public sealed class Context
     public System GetFirstSystemWithComponentType<T>()
         where T : Component
     {
-        foreach( var s in systems )
+        EnsureSystemsFastItNotDirty();
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
         {
+            var s = systems_fastIt[i];
+
             if( s.ComponentType is T )
                 return s;
         }
@@ -123,10 +151,17 @@ public sealed class Context
 
     public System GetFirstSystemWithComponentType(Type type)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         Type prevComponentType = null;
 
-        foreach( var s in systems )
+        EnsureSystemsFastItNotDirty();
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
         {
+            var s = systems_fastIt[i];
+
             var componentType = s.ComponentType;
 
             if( componentType == prevComponentType )
@@ -147,6 +182,9 @@ public sealed class Context
 
     public bool RemoveSystem(System system)
     {
+        if( system == null )
+            return false;
+
         if( systems.Remove(system) )
         {
             system.Context = null;
@@ -166,8 +204,12 @@ public sealed class Context
         {
             justRemoved.Clear();
 
-            foreach( var s in systems )
+            EnsureSystemsFastItNotDirty();
+
+            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
             {
+                var s = systems_fastIt[i];
+
                 if( s is T )
                 {
                     s.Context = null;
@@ -200,8 +242,12 @@ public sealed class Context
         {
             justRemoved.Clear();
 
-            foreach( var s in systems )
+            EnsureSystemsFastItNotDirty();
+
+            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
             {
+                var s = systems_fastIt[i];
+
                 if( s.ComponentType is T )
                 {
                     s.Context = null;
@@ -229,6 +275,9 @@ public sealed class Context
 
     public int RemoveSystemsOfType(Type type)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         try
         {
             justRemoved.Clear();
@@ -236,8 +285,12 @@ public sealed class Context
             Type prevSystemType = null;
             bool prevSystemTypeResult = false;
 
-            foreach( var s in systems )
+            EnsureSystemsFastItNotDirty();
+
+            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
             {
+                var s = systems_fastIt[i];
+
                 var systemType = s.GetType();
 
                 if( systemType != prevSystemType )
@@ -273,6 +326,9 @@ public sealed class Context
 
     public int RemoveSystemsWithComponentType(Type type)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         try
         {
             justRemoved.Clear();
@@ -280,8 +336,12 @@ public sealed class Context
             Type prevComponentType = null;
             bool prevComponentTypeResult = false;
 
-            foreach( var s in systems )
+            EnsureSystemsFastItNotDirty();
+
+            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
             {
+                var s = systems_fastIt[i];
+
                 var componentType = s.ComponentType;
 
                 if( componentType != prevComponentType )
@@ -359,6 +419,9 @@ public sealed class Context
     public T AddComponent<T>(int entityID)
         where T : Component, new()
     {
+        if( !ContainsEntity(entityID) )
+            throw new InvalidOperationException("Entity with ID " + entityID + " does not exist.");
+
         var newComponent = new T();
         AddComponent(newComponent, entityID);
         return newComponent;
@@ -366,6 +429,12 @@ public sealed class Context
 
     public Component AddComponent(int entityID, Type type)
     {
+        if( !ContainsEntity(entityID) )
+            throw new InvalidOperationException("Entity with ID " + entityID + " does not exist.");
+
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         var newComponent = (Component)Activator.CreateInstance(type);
         AddComponent(newComponent, entityID);
         return newComponent;
@@ -377,6 +446,9 @@ public sealed class Context
 
     public bool ContainsComponent(Component component)
     {
+        if( component == null )
+            return false;
+
         return components.Contains(component);
     }
 
@@ -393,6 +465,9 @@ public sealed class Context
 
     public IEnumerable<Component> GetComponentsOfType(Type type)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         HashSet<Component> components = null;
 
         if( cachedComponentsOfType.TryGetValue(type, out components) )
@@ -432,6 +507,9 @@ public sealed class Context
 
     public Component GetFirstComponentOfTypeOfEntity(Type type, int entityID)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         HashSet<Component> components = null;
 
         if( cachedComponentsByEntity.TryGetValue(entityID, out components) )
@@ -461,6 +539,9 @@ public sealed class Context
 
     public bool RemoveComponent(Component component)
     {
+        if( component == null )
+            return false;
+
         if( components.Remove(component) )
         {
             component.Context = null;
@@ -485,6 +566,9 @@ public sealed class Context
 
     public int RemoveComponentsOfType(Type type)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         HashSet<Component> typeComponents;
 
         if( cachedComponentsOfType.TryGetValue(type, out typeComponents) && typeComponents.Any() )
@@ -565,6 +649,9 @@ public sealed class Context
 
     public int RemoveComponentsOfTypeFromEntity(int entityID, Type type)
     {
+        if( type == null )
+            throw new ArgumentNullException("type");
+
         HashSet<Component> toRemove;
 
         if( cachedComponentsByEntity.TryGetValue(entityID, out toRemove) && toRemove.Any() )
@@ -668,6 +755,9 @@ public sealed class Context
 
     private void AddSystem(System newSystem)
     {
+        if( newSystem == null )
+            throw new ArgumentNullException("newSystem");
+
         try
         {
             newSystem.Context = this;
@@ -683,6 +773,9 @@ public sealed class Context
 
     private void AddComponent(Component newComponent, int entityID)
     {
+        if( newComponent == null )
+            throw new ArgumentNullException("newComponent");
+
         try
         {
             newComponent.Context = this;
