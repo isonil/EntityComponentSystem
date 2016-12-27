@@ -13,6 +13,7 @@ public sealed class Context
     private readonly HashSet<int> entities = new HashSet<int>();
     private readonly HashSet<System> systems = new HashSet<System>();
     private readonly HashSet<Component> components = new HashSet<Component>();
+    private int nextEntityID;
 
     // cached components
     private readonly Dictionary<int, HashSet<Component>> cachedComponentsByEntity = new Dictionary<int, HashSet<Component>>();
@@ -25,12 +26,6 @@ public sealed class Context
     // components - cached for fast iteration
     private readonly Dictionary<Type, List<Component>> cachedComponentsOfType_fastIt = new Dictionary<Type, List<Component>>();
     private bool cachedComponentsOfType_fastIt_dirty;
-
-    // working lists
-    private readonly HashSet<System> justRemoved = new HashSet<System>();
-    
-    // misc
-    private int nextEntityID;
 
     public IEnumerable<int> Entities { get { return entities; } }
     public IEnumerable<System> Systems { get { return systems; } }
@@ -45,7 +40,7 @@ public sealed class Context
     {
         EnsureSystemsFastItNotDirty();
 
-        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
             systems_fastIt[i].Update(updateType);
         }
@@ -95,7 +90,7 @@ public sealed class Context
     {
         EnsureSystemsFastItNotDirty();
 
-        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
             var sAsT = systems_fastIt[i] as T;
 
@@ -115,7 +110,7 @@ public sealed class Context
 
         EnsureSystemsFastItNotDirty();
 
-        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
             var s = systems_fastIt[i];
 
@@ -138,7 +133,7 @@ public sealed class Context
     {
         EnsureSystemsFastItNotDirty();
 
-        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
             var s = systems_fastIt[i];
 
@@ -158,7 +153,7 @@ public sealed class Context
 
         EnsureSystemsFastItNotDirty();
 
-        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
             var s = systems_fastIt[i];
 
@@ -200,77 +195,51 @@ public sealed class Context
     public int RemoveSystemsOfType<T>()
         where T : System
     {
-        try
+        EnsureSystemsFastItNotDirty();
+
+        int countRemoved = 0;
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
-            justRemoved.Clear();
+            var s = systems_fastIt[i];
 
-            EnsureSystemsFastItNotDirty();
-
-            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+            if( s is T )
             {
-                var s = systems_fastIt[i];
+                s.Context = null;
+                s.SetCachedComponents(null);
 
-                if( s is T )
-                {
-                    s.Context = null;
-                    s.SetCachedComponents(null);
-
-                    justRemoved.Add(s);
-                }
-            }
-
-            int removed = systems.RemoveWhere(x => justRemoved.Contains(x));
-
-            if( removed != 0 )
+                systems.Remove(s);
                 systems_fastIt_dirty = true;
-
-            justRemoved.Clear();
-
-            return removed;
+                countRemoved++;
+            }
         }
-        catch
-        {
-            systems_fastIt_dirty = true;
-            throw;
-        }
+
+        return countRemoved;
     }
 
     public int RemoveSystemsWithComponentType<T>()
         where T : Component
     {
-        try
+        EnsureSystemsFastItNotDirty();
+
+        int countRemoved = 0;
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
-            justRemoved.Clear();
+            var s = systems_fastIt[i];
 
-            EnsureSystemsFastItNotDirty();
-
-            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+            if( s.ComponentType is T )
             {
-                var s = systems_fastIt[i];
+                s.Context = null;
+                s.SetCachedComponents(null);
 
-                if( s.ComponentType is T )
-                {
-                    s.Context = null;
-                    s.SetCachedComponents(null);
-
-                    justRemoved.Add(s);
-                }
-            }
-
-            int removed = systems.RemoveWhere(x => justRemoved.Contains(x));
-
-            if( removed != 0 )
+                systems.Remove(s);
                 systems_fastIt_dirty = true;
-
-            justRemoved.Clear();
-
-            return removed;
+                countRemoved++;
+            }
         }
-        catch
-        {
-            systems_fastIt_dirty = true;
-            throw;
-        }
+
+        return countRemoved;
     }
 
     public int RemoveSystemsOfType(Type type)
@@ -278,50 +247,36 @@ public sealed class Context
         if( type == null )
             throw new ArgumentNullException("type");
 
-        try
+        Type prevSystemType = null;
+        bool prevSystemTypeResult = false;
+        int countRemoved = 0;
+
+        EnsureSystemsFastItNotDirty();
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
-            justRemoved.Clear();
+            var s = systems_fastIt[i];
 
-            Type prevSystemType = null;
-            bool prevSystemTypeResult = false;
+            var systemType = s.GetType();
 
-            EnsureSystemsFastItNotDirty();
-
-            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+            if( systemType != prevSystemType )
             {
-                var s = systems_fastIt[i];
-
-                var systemType = s.GetType();
-
-                if( systemType != prevSystemType )
-                {
-                    prevSystemType = systemType;
-                    prevSystemTypeResult = type.IsAssignableFrom(systemType);
-                }
-
-                if( !prevSystemTypeResult )
-                    continue;
-
-                s.Context = null;
-                s.SetCachedComponents(null);
-
-                justRemoved.Add(s);
+                prevSystemType = systemType;
+                prevSystemTypeResult = type.IsAssignableFrom(systemType);
             }
 
-            int removed = systems.RemoveWhere(x => justRemoved.Contains(x));
+            if( !prevSystemTypeResult )
+                continue;
 
-            if( removed != 0 )
-                systems_fastIt_dirty = true;
+            s.Context = null;
+            s.SetCachedComponents(null);
 
-            justRemoved.Clear();
-
-            return removed;
-        }
-        catch
-        {
+            systems.Remove(s);
             systems_fastIt_dirty = true;
-            throw;
+            countRemoved++;
         }
+
+        return countRemoved;
     }
 
     public int RemoveSystemsWithComponentType(Type type)
@@ -329,50 +284,36 @@ public sealed class Context
         if( type == null )
             throw new ArgumentNullException("type");
 
-        try
+        Type prevComponentType = null;
+        bool prevComponentTypeResult = false;
+        int countRemoved = 0;
+
+        EnsureSystemsFastItNotDirty();
+
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
-            justRemoved.Clear();
+            var s = systems_fastIt[i];
 
-            Type prevComponentType = null;
-            bool prevComponentTypeResult = false;
+            var componentType = s.ComponentType;
 
-            EnsureSystemsFastItNotDirty();
-
-            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+            if( componentType != prevComponentType )
             {
-                var s = systems_fastIt[i];
-
-                var componentType = s.ComponentType;
-
-                if( componentType != prevComponentType )
-                {
-                    prevComponentType = componentType;
-                    prevComponentTypeResult = type.IsAssignableFrom(componentType);
-                }
-
-                if( !prevComponentTypeResult )
-                    continue;
-
-                s.Context = null;
-                s.SetCachedComponents(null);
-
-                justRemoved.Add(s);
+                prevComponentType = componentType;
+                prevComponentTypeResult = type.IsAssignableFrom(componentType);
             }
 
-            int removed = systems.RemoveWhere(x => justRemoved.Contains(x));
+            if( !prevComponentTypeResult )
+                continue;
 
-            if( removed != 0 )
-                systems_fastIt_dirty = true;
+            s.Context = null;
+            s.SetCachedComponents(null);
 
-            justRemoved.Clear();
-
-            return removed;
-        }
-        catch
-        {
+            systems.Remove(s);
             systems_fastIt_dirty = true;
-            throw;
+            countRemoved++;
         }
+
+        return countRemoved;
     }
 
     //////////////////
@@ -692,7 +633,7 @@ public sealed class Context
     {
         EnsureSystemsFastItNotDirty();
 
-        for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+        for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
             systems_fastIt[i].ReceiveEvent(ev);
         }
@@ -737,7 +678,7 @@ public sealed class Context
             }
 
             // assign cached lists
-            for( int i = 0, count = systems_fastIt.Count; i < count; ++i )
+            for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
             {
                 var system = systems_fastIt[i];
 

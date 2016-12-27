@@ -75,7 +75,7 @@ public abstract class System<T> : System
 
         if( cachedComponents != null )
         {
-            for( int i = 0, count = cachedComponents.Count; i < count; ++i )
+            for( int i = 0, count = cachedComponents.Count; i < count; i++ )
             {
                 Update((T)cachedComponents[i], updateType);
             }
