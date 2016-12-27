@@ -10,6 +10,7 @@ namespace ECS
 public abstract class System
 {
     private Context context;
+    private bool reassignCachedComponents;
     private List<Component> cachedComponents;
 
     public Context Context
@@ -18,11 +19,17 @@ public abstract class System
         internal set { context = value; }
     }
 
+    internal bool ReassignCachedComponents
+    {
+        get { return reassignCachedComponents; }
+        set { reassignCachedComponents = value; }
+    }
+
     protected List<Component> CachedComponents
     {
         get
         {
-            context.RecacheCachedComponentsForSystemsIfNeeded();
+            context.RecacheCachedComponentsForSystemIfNeeded(this);
 
             return cachedComponents;
         }

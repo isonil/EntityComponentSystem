@@ -46,9 +46,20 @@ public sealed class Context
         }
     }
 
-    public void RecacheCachedComponentsForSystemsIfNeeded()
+    public void RecacheCachedComponentsForSystemIfNeeded(System system)
     {
         EnsureCachedComponentsOfTypeFastItNotDirty();
+
+        if( system.ReassignCachedComponents )
+        {
+            List<Component> cachedComponents;
+
+            if( !cachedComponentsOfType_fastIt.TryGetValue(system.ComponentType, out cachedComponents) )
+                cachedComponents = null;
+
+            system.SetCachedComponents(cachedComponents);
+            system.ReassignCachedComponents = false;
+        }
     }
 
     //////////////////
@@ -182,10 +193,11 @@ public sealed class Context
 
         if( systems.Remove(system) )
         {
+            systems_fastIt_dirty = true;
+
             system.Context = null;
             system.SetCachedComponents(null);
 
-            systems_fastIt_dirty = true;
             return true;
         }
 
@@ -677,17 +689,13 @@ public sealed class Context
                 cachedComponents.AddRange(kvp.Value);
             }
 
-            // assign cached lists
+            // notify systems
             for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
             {
-                var system = systems_fastIt[i];
+                var s = systems_fastIt[i];
 
-                List<Component> cachedComponents;
-
-                if( !cachedComponentsOfType_fastIt.TryGetValue(system.ComponentType, out cachedComponents) )
-                    cachedComponents = null;
-
-                system.SetCachedComponents(cachedComponents);
+                s.SetCachedComponents(null);
+                s.ReassignCachedComponents = true;
             }
 
             cachedComponentsOfType_fastIt_dirty = false;
