@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace ECS
 {
 
+[Serializable]
 public struct Event : IEquatable<Event>
 {
     private int kind;

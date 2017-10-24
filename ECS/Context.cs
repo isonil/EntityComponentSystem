@@ -6,7 +6,13 @@ using System.Threading.Tasks;
 
 namespace ECS
 {
-   
+ 
+/// <summary>
+/// A container for all entities, Components, and Systems which should
+/// interact with each other. In most cases you want to have only one instance
+/// of this class.
+/// </summary>
+[Serializable]
 public sealed class Context
 {
     // main
@@ -16,26 +22,49 @@ public sealed class Context
     private int nextEntityID;
 
     // cached components
-    private readonly Dictionary<int, HashSet<Component>> cachedComponentsByEntity = new Dictionary<int, HashSet<Component>>();
-    private readonly Dictionary<Type, HashSet<Component>> cachedComponentsOfType = new Dictionary<Type, HashSet<Component>>();
+    [NonSerialized] private readonly Dictionary<int, HashSet<Component>> cachedComponentsByEntity
+        = new Dictionary<int, HashSet<Component>>();
+
+    [NonSerialized] private readonly Dictionary<Type, HashSet<Component>> cachedComponentsOfType
+        = new Dictionary<Type, HashSet<Component>>();
 
     // systems - cached for fast iteration
-    private readonly List<System> systems_fastIt = new List<System>();
-    private bool systems_fastIt_dirty;
+    [NonSerialized] private readonly List<System> systems_fastIt = new List<System>();
+    [NonSerialized] private bool systems_fastIt_dirty;
 
     // components - cached for fast iteration
-    private readonly Dictionary<Type, List<Component>> cachedComponentsOfType_fastIt = new Dictionary<Type, List<Component>>();
-    private bool cachedComponentsOfType_fastIt_dirty;
+    [NonSerialized] private readonly Dictionary<Type, List<Component>> cachedComponentsOfType_fastIt
+        = new Dictionary<Type, List<Component>>();
 
+    [NonSerialized] private bool cachedComponentsOfType_fastIt_dirty;
+
+    /// <summary>
+    /// Returns all entities associated with this Context.
+    /// </summary>
     public IEnumerable<int> Entities { get { return entities; } }
+
+    /// <summary>
+    /// Returns all Systems associated with this Context.
+    /// </summary>
     public IEnumerable<System> Systems { get { return systems; } }
+
+    /// <summary>
+    /// Returns all Components of all entities associated with this Context.
+    /// </summary>
     public IEnumerable<Component> Components { get { return components; } }
 
+    /// <summary>
+    /// Calls update on every System.
+    /// </summary>
     public void Update()
     {
         Update(0);
     }
 
+    /// <summary>
+    /// Calls update on every system.
+    /// </summary>
+    /// <param name="updateType">Extra parameter passed to all Systems.</param>
     public void Update(int updateType)
     {
         EnsureSystemsFastItNotDirty();
@@ -46,7 +75,7 @@ public sealed class Context
         }
     }
 
-    public void RecacheCachedComponentsForSystemIfNeeded(System system)
+    internal void RecacheCachedComponentsForSystemIfNeeded(System system)
     {
         EnsureCachedComponentsOfTypeFastItNotDirty();
 
@@ -66,6 +95,11 @@ public sealed class Context
     /// Add system ///
     //////////////////
 
+    /// <summary>
+    /// Creates a new System and adds it to this Context.
+    /// </summary>
+    /// <typeparam name="T">Type of the System to add.</typeparam>
+    /// <returns>Created System instance.</returns>
     public T AddSystem<T>()
         where T : System, new()
     {
@@ -74,6 +108,11 @@ public sealed class Context
         return newSystem;
     }
 
+    /// <summary>
+    /// Creates a new System and adds it to this Context.
+    /// </summary>
+    /// <param name="type">Type of the System to add.</param>
+    /// <returns>Created System instance.</returns>
     public System AddSystem(Type type)
     {
         if( type == null )
@@ -88,6 +127,11 @@ public sealed class Context
     /// Query systems ///
     /////////////////////
 
+    /// <summary>
+    /// Returns whether this Context contains the given System.
+    /// </summary>
+    /// <param name="system">System instance to check.</param>
+    /// <returns>True if this Context contains this System.</returns>
     public bool ContainsSystem(System system)
     {
         if( system == null )
@@ -96,6 +140,11 @@ public sealed class Context
         return systems.Contains(system);
     }
 
+    /// <summary>
+    /// Returns the first System instace of the given type.
+    /// </summary>
+    /// <typeparam name="T">Type of the System to check.</typeparam>
+    /// <returns>Instance of the first System of the given type.</returns>
     public T GetFirstSystemOfType<T>()
         where T : System
     {
@@ -112,6 +161,11 @@ public sealed class Context
         return null;
     }
 
+    /// <summary>
+    /// Returns the first System instace of the given type.
+    /// </summary>
+    /// <param name="type">Type of the System to check.</param>
+    /// <returns>Instance of the first System of the given type.</returns>
     public System GetFirstSystemOfType(Type type)
     {
         if( type == null )
@@ -139,6 +193,12 @@ public sealed class Context
         return null;
     }
 
+    /// <summary>
+    /// Returns the first System which is responsible for handling Components
+    /// of the given Component type.
+    /// </summary>
+    /// <typeparam name="T">Component type to check.</typeparam>
+    /// <returns>The first System instance which handles Components of the given type.</returns>
     public System GetFirstSystemWithComponentType<T>()
         where T : Component
     {
@@ -155,6 +215,12 @@ public sealed class Context
         return null;
     }
 
+    /// <summary>
+    /// Returns the first System which is responsible for handling Components
+    /// of the given Component type.
+    /// </summary>
+    /// <param name="type">Component type to check.</param>
+    /// <returns>The first System instance which handles Components of the given type.</returns>
     public System GetFirstSystemWithComponentType(Type type)
     {
         if( type == null )
@@ -186,6 +252,11 @@ public sealed class Context
     /// Remove system ///
     /////////////////////
 
+    /// <summary>
+    /// Removes the given System from this Context.
+    /// </summary>
+    /// <param name="system">System to remove.</param>
+    /// <returns>True if removed successfully.</returns>
     public bool RemoveSystem(System system)
     {
         if( system == null )
@@ -204,6 +275,11 @@ public sealed class Context
         return false;
     }
 
+    /// <summary>
+    /// Removes all Systems of the given type.
+    /// </summary>
+    /// <typeparam name="T">System type to check.</typeparam>
+    /// <returns>The number of Systems removed.</returns>
     public int RemoveSystemsOfType<T>()
         where T : System
     {
