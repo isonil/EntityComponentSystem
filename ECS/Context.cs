@@ -446,7 +446,7 @@ public sealed class Context
 
         if( cachedComponentsByEntity.TryGetValue(entityID, out components) )
         {
-            foreach( var c in cachedComponentsByEntity )
+            foreach( var c in components )
             {
                 var cAsT = c as T;
 
