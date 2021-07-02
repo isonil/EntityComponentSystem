@@ -1,6 +1,6 @@
 # About
 
-Simple and fast Entity-Component-System for C#.
+A simple and fast Entity-Component-System for C#.
 
 Every entity is represented as an int.
 
