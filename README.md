@@ -1,3 +1,7 @@
+<p align="center">
+  <img height="300" src="https://user-images.githubusercontent.com/8492408/124276070-a6a42880-db43-11eb-89af-4e612eb66620.png">
+</p>
+
 # About
 
 A simple and fast Entity-Component-System for C#.
