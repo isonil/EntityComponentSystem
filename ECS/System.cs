@@ -60,7 +60,7 @@ public abstract class System
     {
     }
 
-    public abstract void Update(int updateType);
+    public abstract void Update(object updateData);
 }
     
 public abstract class System<T> : System
@@ -73,7 +73,7 @@ public abstract class System<T> : System
         return Context.GetFirstComponentOfTypeOfEntity<T>(entityID);
     }
 
-    public override void Update(int updateType)
+    public override void Update(object updateData)
     {
         var cachedComponents = CachedComponents;
 
@@ -81,12 +81,12 @@ public abstract class System<T> : System
         {
             for( int i = 0, count = cachedComponents.Count; i < count; i++ )
             {
-                Update((T)cachedComponents[i], updateType);
+                Update((T)cachedComponents[i], updateData);
             }
         }
     }
 
-    protected virtual void Update(T component, int updateType)
+    protected virtual void Update(T component, object updateData)
     {
     }
 }

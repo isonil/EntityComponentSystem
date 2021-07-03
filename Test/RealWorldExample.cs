@@ -29,9 +29,9 @@ namespace Test
 
         public class AISystem : System<AI>
         {
-            protected override void Update(AI component, int updateType)
+            protected override void Update(AI component, object updateData)
             {
-                base.Update(component, updateType);
+                base.Update(component, updateData);
 
                 Console.WriteLine("Enemy with ID " + component.EntityID + " looks for someone to attack.");
 

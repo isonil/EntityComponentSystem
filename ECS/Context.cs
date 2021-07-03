@@ -56,20 +56,20 @@ public sealed class Context
     /// </summary>
     public void Update()
     {
-        Update(0);
+        Update(null);
     }
 
     /// <summary>
     /// Calls update on every system.
     /// </summary>
-    /// <param name="updateType">Extra parameter passed to all Systems.</param>
-    public void Update(int updateType)
+    /// <param name="updateData">Extra parameter passed to all Systems.</param>
+    public void Update(object updateData)
     {
         EnsureSystemsFastItNotDirty();
 
         for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
-            systems_fastIt[i].Update(updateType);
+            systems_fastIt[i].Update(updateData);
         }
     }
 
