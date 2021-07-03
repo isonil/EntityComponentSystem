@@ -37,7 +37,7 @@ public class System1 : System<Comp1>
         Console.WriteLine("Updating Comp1 of " + component.EntityID);
 
         Console.WriteLine("System1 sends event. EntityID = " + component.EntityID);
-        SendEvent(0, component.EntityID, null);
+        SendEvent(component.EntityID, null);
     }
 }
 
@@ -52,7 +52,7 @@ public class System2 : System<Comp2>
     {
         base.ReceiveEvent(ev);
 
-        Console.WriteLine("System2 received event. Kind = " + ev.Kind + ", EntityID = " + ev.EntityID);
+        Console.WriteLine("System2 received event. EntityID = " + ev.EntityID);
     }
 }
 
@@ -131,7 +131,7 @@ public class AISystem : System<AI>
             {
                 // attack
                 var args = new AttackEventArgs { TargetEntityID = enemyPosition.EntityID, AttackStrength = 25 };
-                SendEvent(0, component.EntityID, args);
+                SendEvent(component.EntityID, args);
                 break;
             }
         }
