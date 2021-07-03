@@ -36,6 +36,8 @@ public sealed class Context
 
     [NonSerialized] private bool cachedComponentsOfType_fastIt_dirty;
 
+    public Action<Exception> ErrorHandler { get; set; }
+
     /// <summary>
     /// Returns all entities associated with this Context.
     /// </summary>
@@ -69,7 +71,14 @@ public sealed class Context
 
         for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
-            systems_fastIt[i].Update(updateData);
+            try { systems_fastIt[i].Update(updateData); }
+            catch( Exception e )
+            {
+                if( ErrorHandler != null )
+                    ErrorHandler(e);
+                else
+                    throw;
+            }
         }
     }
 
@@ -721,7 +730,14 @@ public sealed class Context
 
         for( int i = 0, count = systems_fastIt.Count; i < count; i++ )
         {
-            systems_fastIt[i].ReceiveEvent(ev);
+            try { systems_fastIt[i].ReceiveEvent(ev); }
+            catch( Exception e )
+            {
+                if( ErrorHandler != null )
+                    ErrorHandler(e);
+                else
+                    throw;
+            }
         }
     }
 

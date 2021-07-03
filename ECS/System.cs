@@ -81,7 +81,14 @@ public abstract class System<T> : System
         {
             for( int i = 0, count = cachedComponents.Count; i < count; i++ )
             {
-                Update((T)cachedComponents[i], updateData);
+                try { Update((T)cachedComponents[i], updateData); }
+                catch( Exception e )
+                {
+                    if( Context.ErrorHandler != null )
+                        Context.ErrorHandler(e);
+                    else
+                        throw;
+                }
             }
         }
     }
