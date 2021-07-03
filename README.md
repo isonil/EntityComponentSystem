@@ -32,7 +32,7 @@ public class Comp2 : Component
 
 public class System1 : System<Comp1>
 {
-    protected override void Update(Comp1 component, int updateType)
+    protected override void Update(Comp1 component, object updateData)
     {
         Console.WriteLine("Updating Comp1 of " + component.EntityID);
 
@@ -43,7 +43,7 @@ public class System1 : System<Comp1>
 
 public class System2 : System<Comp2>
 {
-    protected override void Update(Comp2 component, int updateType)
+    protected override void Update(Comp2 component, object updateData)
     {
         Console.WriteLine("Updating Comp2 of " + component.EntityID);
     }
@@ -110,9 +110,9 @@ public class PositionSystem : System<Position>
 
 public class AISystem : System<AI>
 {
-    protected override void Update(AI component, int updateType)
+    protected override void Update(AI component, object updateData)
     {
-        base.Update(component, updateType);
+        base.Update(component, updateData);
 
         Console.WriteLine("Enemy with ID " + component.EntityID + " looks for someone to attack.");
 
