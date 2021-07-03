@@ -6,19 +6,16 @@ namespace ECS
 [Serializable]
 public struct Event : IEquatable<Event>
 {
-    private int kind;
     private System sender;
     private int entityID;
     private object data;
 
-    public int Kind { get { return kind; } }
     public System Sender { get { return sender; } }
     public int EntityID { get { return entityID; } }
     public object Data { get { return data; } }
 
-    public Event(int kind, System sender, int entityID, object data)
+    public Event(System sender, int entityID, object data)
     {
-        this.kind = kind;
         this.sender = sender;
         this.entityID = entityID;
         this.data = data;
@@ -26,8 +23,7 @@ public struct Event : IEquatable<Event>
 
     public static bool operator ==(Event lhs, Event rhs)
     {
-        return lhs.kind == rhs.kind
-            && lhs.sender == rhs.sender
+        return lhs.sender == rhs.sender
             && lhs.entityID == rhs.entityID
             && lhs.data == rhs.data;
     }
@@ -47,8 +43,7 @@ public struct Event : IEquatable<Event>
 
     public bool Equals(Event other)
     {
-        return kind.Equals(other.kind)
-            && System.Equals(sender, other.sender)
+        return System.Equals(sender, other.sender)
             && entityID.Equals(other.entityID)
             && object.Equals(data, other.data);
     }
@@ -58,8 +53,6 @@ public struct Event : IEquatable<Event>
         unchecked
         {
             int hash = 17;
-
-            hash = hash * 23 + kind;
 
             if( sender != null )
                 hash = hash * 23 + sender.GetHashCode();

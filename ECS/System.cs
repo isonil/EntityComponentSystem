@@ -51,9 +51,9 @@ public abstract class System
         context.SendEvent(ev);
     }
 
-    protected void SendEvent(int kind, int entityID, object data)
+    protected void SendEvent(int entityID, object data)
     {
-        context.SendEvent(new Event(kind, this, entityID, data));
+        context.SendEvent(new Event(this, entityID, data));
     }
 
     public virtual void ReceiveEvent(Event ev)

@@ -50,7 +50,7 @@ namespace Test
                     {
                         // attack
                         var args = new AttackEventArgs { TargetEntityID = enemyPosition.EntityID, AttackStrength = 25 };
-                        SendEvent(0, component.EntityID, args);
+                        SendEvent(component.EntityID, args);
                         break;
                     }
                 }
