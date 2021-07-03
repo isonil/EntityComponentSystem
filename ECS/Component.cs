@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ECS
+﻿namespace ECS
 {
 
 /// <summary>
-/// Every entiy consists of Components which add additional functionality.
-/// Components can be responsible for example for making the entity interact
-/// with the physical world, or responding to specific events in any way.
+/// Every entity consists of multiple Components.
+/// Components usually contain raw data only.
+/// Components are managed by their corresponding System.
 /// </summary>
 public abstract class Component
 {
@@ -28,8 +22,7 @@ public abstract class Component
 
     /// <summary>
     /// Returns the ID of the entity which owns this component.
-    /// Every Component instance can be assigned to only one entity,
-    /// this happens automatically when you add a Component via Context.
+    /// Every Component instance is owned by exactly one entity.
     /// </summary>
     public int EntityID
     {

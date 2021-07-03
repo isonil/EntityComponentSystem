@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ECS
 {
  
 /// <summary>
-/// A container for all entities, Components, and Systems which should
+/// A container for all entities, Components, and Systems which can
 /// interact with each other. In most cases you want to have only one instance
 /// of this class.
 /// </summary>
