@@ -36,6 +36,10 @@ public sealed class Context
 
     [NonSerialized] private bool cachedComponentsOfType_fastIt_dirty;
 
+    /// <summary>
+    /// An error handler for exceptions thrown by Systems.
+    /// If non-null, then one System's exception won't interrupt the entire update process.
+    /// </summary>
     public Action<Exception> ErrorHandler { get; set; }
 
     /// <summary>
@@ -62,7 +66,7 @@ public sealed class Context
     }
 
     /// <summary>
-    /// Calls update on every system.
+    /// Calls update on every System.
     /// </summary>
     /// <param name="updateData">Extra parameter passed to all Systems.</param>
     public void Update(object updateData)
@@ -311,7 +315,12 @@ public sealed class Context
 
         return countRemoved;
     }
-
+        
+    /// <summary>
+    /// Removes all Systems which handle components of the given component type.
+    /// </summary>
+    /// <typeparam name="T">Component type to check.</typeparam>
+    /// <returns>The number of Systems removed.</returns>
     public int RemoveSystemsWithComponentType<T>()
         where T : Component
     {
