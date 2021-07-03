@@ -53,6 +53,7 @@
     <Compile Include="Test\System2.cs" />
     <Compile Include="Test\Test.cs" />
     <Compile Include="ECS\TypesCache.cs" />
+    <Compile Include="Test\RealWorldExample.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
