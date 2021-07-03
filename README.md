@@ -13,8 +13,8 @@ The code is self-documenting. Start with creating an instance of Context.
 # How to use
 
 1. Create an instance of Context.
-2. Add custom Systems and Components.
-3. Call Context.Update() every frame or use Context.SendEvent() to send custom events.
+2. Add custom Systems, Entities, and Components by calling context.AddSystem(), context.AddEntity(), and context.AddComponent().
+3. Call context.Update() every frame and/or use context.SendEvent() to send custom events between systems.
 
 # Example
 
