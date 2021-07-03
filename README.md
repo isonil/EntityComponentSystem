@@ -15,6 +15,7 @@ The code is self-documenting. Start with creating an instance of Context.
 1. Create an instance of Context.
 2. Add custom Systems, Entities, and Components by calling context.AddSystem(), context.AddEntity(), and context.AddComponent().
 3. Call context.Update() every frame and/or use context.SendEvent() to send custom events between systems.
+4. (optional) Set context.ErrorHandler so one system's exception doesn't interrupt the entire update process.
 
 # Example
 
